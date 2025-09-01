@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
@@ -22,16 +21,8 @@ type es7Client struct {
 	esClient *elasticsearch.Client
 }
 
-func newES7() (Client, error) {
-	esAddr := os.Getenv("ES_ADDR")
-	esUsername := os.Getenv("ES_USERNAME")
-	esPassword := os.Getenv("ES_PASSWORD")
-
-	esClient, err := elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{esAddr},
-		Username:  esUsername,
-		Password:  esPassword,
-	})
+func newES7(cfg elasticsearch.Config) (Client, error) {
+	esClient, err := elasticsearch.NewClient(cfg)
 	if err != nil {
 		return nil, err
 	}

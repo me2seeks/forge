@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
+	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/me2seeks/forge/infra/contract/es"
 )
 
@@ -22,9 +24,17 @@ func New() (Client, error) {
 	v := os.Getenv("ES_VERSION")
 	switch v {
 	case "v8":
-		return newES8()
+		return newES8(elasticsearchv8.Config{
+			Addresses: []string{os.Getenv("ES_ADDR")},
+			Username:  os.Getenv("ES_USERNAME"),
+			Password:  os.Getenv("ES_PASSWORD"),
+		})
 	case "v7":
-		return newES7()
+		return newES7(elasticsearch7.Config{
+			Addresses: []string{os.Getenv("ES_ADDR")},
+			Username:  os.Getenv("ES_USERNAME"),
+			Password:  os.Getenv("ES_PASSWORD"),
+		})
 	default:
 		return nil, fmt.Errorf("unsupported es version %s", v)
 	}
