@@ -1,6 +1,6 @@
 module github.com/me2seeks/forge
 
-go 1.24.0
+go 1.23.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.38.3
@@ -12,6 +12,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.19.0
 	github.com/golang/mock v1.6.0
 	github.com/minio/minio-go/v7 v7.0.95
+	github.com/neo4j/neo4j-go-driver/v5 v5.28.2
 	github.com/onsi/gomega v1.38.2
 	github.com/stretchr/testify v1.11.1
 	github.com/volcengine/ve-tos-golang-sdk/v2 v2.7.21
@@ -48,7 +49,6 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/minio/crc64nvme v1.0.2 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/neo4j/neo4j-go-driver/v5 v5.28.2 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
