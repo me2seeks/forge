@@ -7,14 +7,85 @@ import (
 
 	"github.com/me2seeks/forge/infra/contract/graph"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j/auth"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j/config"
 )
 
 type neo4jClient struct {
 	driver neo4j.DriverWithContext
 }
 
-func New(ctx context.Context, uri, username, password string) (graph.Client, error) {
-	driver, err := neo4j.NewDriverWithContext(uri, neo4j.BasicAuth(username, password, ""))
+// Option is a function that configures the neo4j client
+type Option func(*options)
+
+// options contains the configuration for the neo4j client
+type options struct {
+	auth        auth.TokenManager
+	configurers []func(*config.Config)
+}
+
+// WithAuth sets the authentication token for the client
+func WithAuth(auth neo4j.AuthToken) Option {
+	return func(o *options) {
+		o.auth = auth
+	}
+}
+
+// WithBasicAuth sets basic authentication for the client
+func WithBasicAuth(username, password, realm string) Option {
+	return func(o *options) {
+		o.auth = neo4j.BasicAuth(username, password, realm)
+	}
+}
+
+// WithBearerAuth sets bearer authentication for the client
+func WithBearerAuth(token string) Option {
+	return func(o *options) {
+		o.auth = neo4j.BearerAuth(token)
+	}
+}
+
+// WithKerberosAuth sets kerberos authentication for the client
+func WithKerberosAuth(ticket string) Option {
+	return func(o *options) {
+		o.auth = neo4j.KerberosAuth(ticket)
+	}
+}
+
+// WithCustomAuth sets custom authentication for the client
+func WithCustomAuth(scheme, username, password, realm string, parameters map[string]any) Option {
+	return func(o *options) {
+		o.auth = neo4j.CustomAuth(scheme, username, password, realm, parameters)
+	}
+}
+
+// WithNoAuth sets no authentication for the client
+func WithNoAuth() Option {
+	return func(o *options) {
+		o.auth = neo4j.NoAuth()
+	}
+}
+
+// WithConfigurers adds configurers for the neo4j driver
+func WithConfigurers(configurers ...func(*config.Config)) Option {
+	return func(o *options) {
+		o.configurers = configurers
+	}
+}
+
+// New creates a new neo4j client with the given options
+func New(ctx context.Context, uri string, opts ...Option) (graph.Client, error) {
+	// Default options
+	o := &options{
+		auth: neo4j.NoAuth(),
+	}
+
+	// Apply provided options
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	driver, err := neo4j.NewDriverWithContext(uri, o.auth, o.configurers...)
 	if err != nil {
 		return nil, err
 	}

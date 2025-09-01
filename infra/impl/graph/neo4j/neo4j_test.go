@@ -18,7 +18,7 @@ var (
 
 func setup(t *testing.T) (graph.Client, func()) {
 	ctx := context.Background()
-	client, err := New(ctx, testURI, testUsername, testPassword)
+	client, err := New(ctx, testURI, WithBasicAuth(testUsername, testPassword, ""))
 	require.NoError(t, err)
 
 	teardown := func() {
