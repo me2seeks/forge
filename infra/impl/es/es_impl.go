@@ -24,13 +24,13 @@ func New() (Client, error) {
 	v := os.Getenv("ES_VERSION")
 	switch v {
 	case "v8":
-		return newES8(elasticsearchv8.Config{
+		return NewES8(elasticsearchv8.Config{
 			Addresses: []string{os.Getenv("ES_ADDR")},
 			Username:  os.Getenv("ES_USERNAME"),
 			Password:  os.Getenv("ES_PASSWORD"),
 		})
 	case "v7":
-		return newES7(elasticsearch7.Config{
+		return NewES7(elasticsearch7.Config{
 			Addresses: []string{os.Getenv("ES_ADDR")},
 			Username:  os.Getenv("ES_USERNAME"),
 			Password:  os.Getenv("ES_PASSWORD"),

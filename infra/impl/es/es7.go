@@ -21,7 +21,7 @@ type es7Client struct {
 	esClient *elasticsearch.Client
 }
 
-func newES7(cfg elasticsearch.Config) (Client, error) {
+func NewES7(cfg elasticsearch.Config) (Client, error) {
 	esClient, err := elasticsearch.NewClient(cfg)
 	if err != nil {
 		return nil, err

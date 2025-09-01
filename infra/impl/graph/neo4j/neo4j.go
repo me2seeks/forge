@@ -314,7 +314,7 @@ func (c *neo4jClient) DeleteEdge(ctx context.Context, edgeID string) error {
 }
 
 func (c *neo4jClient) CreateNodeIndex(ctx context.Context, label string, properties []string) error {
-	// Neo4j 社区版一次只能为一个属性创建索引
+	// TODO Neo4j 社区版一次只能为一个属性创建索引
 	cypher := "CREATE INDEX ON :`" + label + "`(" + properties[0] + ")"
 	return c.runCypher(ctx, cypher, nil)
 }

@@ -33,7 +33,7 @@ type es8BulkIndexer struct {
 
 type es8Types struct{}
 
-func newES8(cfg elasticsearch.Config) (Client, error) {
+func NewES8(cfg elasticsearch.Config) (Client, error) {
 	esClient, err := elasticsearch.NewTypedClient(cfg)
 	if err != nil {
 		return nil, err
