@@ -39,6 +39,16 @@ type Client interface {
 	DropNodeIndex(ctx context.Context, label string, properties []string) error
 	DropEdgeIndex(ctx context.Context, label string, properties []string) error
 	DropConstraint(ctx context.Context, label, property string, constraintType ConstraintType) error
+
+	// --- Bulk Update/Delete Operations (based on Query) ---
+	// UpdateNodesByQuery updates properties of all nodes matching the query.
+	UpdateNodesByQuery(ctx context.Context, query *Query, properties Properties) (int, error)
+	// UpdateEdgesByQuery updates properties of all edges matching the query.
+	UpdateEdgesByQuery(ctx context.Context, query *Query, properties Properties) (int, error)
+	// DeleteNodesByQuery deletes all nodes matching the query.
+	DeleteNodesByQuery(ctx context.Context, query *Query) (int, error)
+	// DeleteEdgesByQuery deletes all edges matching the query.
+	DeleteEdgesByQuery(ctx context.Context, query *Query) (int, error)
 }
 
 // BulkWriter provides an interface for efficient bulk data ingestion.

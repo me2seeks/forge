@@ -55,12 +55,16 @@ func TestNodeCRUD(t *testing.T) {
 	require.NotEmpty(t, createdNode.ID)
 	require.Equal(t, "Alice", createdNode.Properties["name"])
 
+	t.Logf("createdNode: %v", createdNode)
+
 	// 2. Get Node
 	retrievedNode, err := client.GetNode(ctx, createdNode.ID)
 	require.NoError(t, err)
 	require.NotNil(t, retrievedNode)
 	require.Equal(t, createdNode.ID, retrievedNode.ID)
 	require.Equal(t, "alice@example.com", retrievedNode.Properties["email"])
+
+	t.Logf("retrievedNode: %v", retrievedNode)
 
 	// 3. Update Node
 	err = client.UpdateNode(ctx, createdNode.ID, graph.Properties{"name": "Alice Smith"})
@@ -71,6 +75,8 @@ func TestNodeCRUD(t *testing.T) {
 	require.NotNil(t, updatedNode)
 	require.Equal(t, "Alice Smith", updatedNode.Properties["name"])
 	require.Equal(t, "alice@example.com", updatedNode.Properties["email"]) // Email should be unchanged
+
+	t.Logf("updatedNode: %v", updatedNode)
 
 	// // 4. Delete Node
 	err = client.DeleteNode(ctx, createdNode.ID)
