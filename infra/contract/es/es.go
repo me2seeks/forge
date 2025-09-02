@@ -10,6 +10,7 @@ type Client interface {
 	Delete(ctx context.Context, index, id string) error
 	Search(ctx context.Context, index string, req *Request) (*Response, error)
 	Exists(ctx context.Context, index string) (bool, error)
+	Count(ctx context.Context, index string, query *Query) (int64, error)
 	CreateIndex(ctx context.Context, index string, properties map[string]any) error
 	DeleteIndex(ctx context.Context, index string) error
 	Types() Types

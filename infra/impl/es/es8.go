@@ -69,6 +69,14 @@ func (c *es8Client) Exists(ctx context.Context, index string) (bool, error) {
 	return exist, nil
 }
 
+func (c *es8Client) Count(ctx context.Context, index string, query *Query) (int64, error) {
+	resp, err := c.esClient.Count().Index(index).Query(c.query2ESQuery(query)).Do(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return resp.Count, nil
+}
+
 func (c *es8Client) query2ESQuery(q *Query) *types.Query {
 	if q == nil {
 		return nil

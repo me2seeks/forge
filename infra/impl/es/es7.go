@@ -90,6 +90,53 @@ func (c *es7Client) Exists(ctx context.Context, index string) (bool, error) {
 	return res.StatusCode == 200, nil
 }
 
+func (c *es7Client) Count(ctx context.Context, index string, query *Query) (int64, error) {
+	// Convert the query to Elasticsearch query format
+	queryBody := map[string]any{}
+	if q := c.query2ESQuery(query); q != nil {
+		queryBody["query"] = q
+	}
+
+	// Marshal the query body to JSON
+	body, err := json.Marshal(queryBody)
+	if err != nil {
+		return 0, err
+	}
+
+	// Create the Count request
+	res, err := c.esClient.Count(
+		c.esClient.Count.WithContext(ctx),
+		c.esClient.Count.WithIndex(index),
+		c.esClient.Count.WithBody(bytes.NewReader(body)),
+	)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	// Check for HTTP errors
+	if res.IsError() {
+		return 0, fmt.Errorf("count request failed with status %s", res.Status())
+	}
+
+	// Parse the response
+	respBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	// Define a struct to parse the Count API response
+	var countResp struct {
+		Count int64 `json:"count"`
+	}
+
+	if err := json.Unmarshal(respBytes, &countResp); err != nil {
+		return 0, err
+	}
+
+	return countResp.Count, nil
+}
+
 func (c *es7Client) CreateIndex(ctx context.Context, index string, properties map[string]any) error {
 	mapping := map[string]any{
 		"mappings": map[string]any{
