@@ -285,6 +285,12 @@ func (c *es7Client) query2ESQuery(q *Query) map[string]any {
 				q.KV.Key: q.KV.Value,
 			},
 		}
+	case es.QueryTypePrefix:
+		base = map[string]any{
+			"prefix": map[string]any{
+				q.KV.Key: q.KV.Value,
+			},
+		}
 	default:
 		base = map[string]any{}
 	}

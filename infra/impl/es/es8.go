@@ -128,6 +128,12 @@ func (c *es8Client) query2ESQuery(q *Query) *types.Query {
 				},
 			},
 		}
+	case es.QueryTypePrefix:
+		typesQ = &types.Query{
+			Prefix: map[string]types.PrefixQuery{
+				q.KV.Key: {Value: fmt.Sprint(q.KV.Value)},
+			},
+		}
 	default:
 		typesQ = &types.Query{}
 	}

@@ -7,6 +7,7 @@ const (
 	QueryTypeNotExists  = "not_exists"
 	QueryTypeContains   = "contains"
 	QueryTypeIn         = "in"
+	QueryTypePrefix     = "prefix"
 )
 
 type KV struct {
@@ -54,6 +55,13 @@ func NewMatchQuery(k string, v any) Query {
 	return Query{
 		KV:   KV{Key: k, Value: v},
 		Type: QueryTypeMatch,
+	}
+}
+
+func NewPrefixQuery(k string, v any) Query {
+	return Query{
+		KV:   KV{Key: k, Value: v},
+		Type: QueryTypePrefix,
 	}
 }
 
