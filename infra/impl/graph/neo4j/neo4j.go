@@ -626,6 +626,11 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 	var matchParts []string
 	for _, p := range matchPatterns {
 		var sb strings.Builder
+		// Handle path alias assignment, e.g., "p = (n)-[]->(m)"
+		if p.PathAlias != "" {
+			sb.WriteString(p.PathAlias)
+			sb.WriteString(" = ")
+		}
 		// Build node pattern: (alias:Label1:Label2 {prop1: $param1, prop2: $param2})
 		sb.WriteString("(")
 		if p.Alias != "" {

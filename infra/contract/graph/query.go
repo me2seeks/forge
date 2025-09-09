@@ -14,6 +14,8 @@ type Query struct {
 
 // Pattern defines a graph pattern to match, e.g., (n:Label)-[r:REL]->(m:Label).
 type Pattern struct {
+	// PathAlias is the variable name to assign to the entire path (e.g., "p" in "MATCH p = (n)-[]->(m)").
+	PathAlias string `json:"path_alias,omitempty"`
 	// A unique alias for the node in the query, e.g., "n", "m".
 	Alias string
 	// Optional: filter by node labels.

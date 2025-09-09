@@ -172,6 +172,38 @@ func TestBuildCypherQuery_VariableLengthPath(t *testing.T) {
 	}
 }
 
+// TestBuildCypherQuery_PathAliasAndExpression tests a query with a path alias and a function on that path.
+func TestBuildCypherQuery_PathAliasAndExpression(t *testing.T) {
+	query := &graph.Query{
+		Match: []graph.Pattern{
+			{
+				PathAlias: "p",
+				Alias:     "startNode",
+				Labels:    []string{"User"},
+				Edge: &graph.EdgePattern{
+					Labels:  []string{"KNOWS"},
+					MinHops: intPtr(1),
+					Node:    &graph.Pattern{Alias: "endNode"},
+				},
+			},
+		},
+		Return: []graph.Return{
+			{Expression: "length(p)", Alias: "path_length"},
+		},
+	}
+
+	expectedCypher := "MATCH p = (startNode:`User`)-[:KNOWS*1..]->(endNode) RETURN length(p) AS path_length"
+	cypher, _ := buildCypherQuery(query)
+
+	if cypher != expectedCypher {
+		t.Errorf("Cypher mismatch for path alias expression.\nGot:  %s\nWant: %s", cypher, expectedCypher)
+	}
+}
+
+func intPtr(i int) *int {
+	return &i
+}
+
 // TestBuildCypherQuery_ReturnExpression tests a query with a function expression in the RETURN clause.
 func TestBuildCypherQuery_ReturnExpression(t *testing.T) {
 	query := &graph.Query{
