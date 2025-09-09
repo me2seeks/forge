@@ -30,6 +30,12 @@ type EdgePattern struct {
 	Labels     []string
 	Properties Properties
 	Direction  EdgeDirection
+	// MinHops specifies the minimum number of hops for a variable-length path.
+	// A nil value defaults to 1.
+	MinHops *int
+	// MaxHops specifies the maximum number of hops for a variable-length path.
+	// A nil value indicates an unbounded path.
+	MaxHops *int
 	// The next node in the pattern.
 	Node *Pattern
 }
@@ -81,12 +87,14 @@ const (
 
 // --- Return & Result ---
 
-// Return specifies what to include in the query result.
+// Return specifies a single item to be returned by the query.
 type Return struct {
-	// The alias of the node/edge to return.
-	Alias string
-	// Optional: specify which properties to return. If empty, all are returned.
-	Properties []string
+	// Expression is the item to be returned. It can be a variable from the MATCH clause (e.g., "n", "p"),
+	// a property (e.g., "n.name"), or a function call (e.g., "count(n)", "max(n.age)", "length(p)").
+	Expression string `json:"expression"`
+	// Alias is the name to use for the returned item in the result set.
+	// e.g., if Expression is "count(n)" and Alias is "node_count", the result will contain a "node_count" field.
+	Alias string `json:"alias,omitempty"`
 }
 
 // Order specifies a field to sort the results by.

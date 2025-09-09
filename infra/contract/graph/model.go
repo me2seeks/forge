@@ -10,6 +10,12 @@ type Node struct {
 	Properties Properties `json:"properties"`
 }
 
+// Path represents a sequence of nodes and edges, typically as the result of a pathfinding algorithm.
+type Path struct {
+	Nodes []*Node `json:"nodes"`
+	Edges []*Edge `json:"edges"`
+}
+
 // Edge represents an edge (or relationship) between two nodes.
 type Edge struct {
 	ID string `json:"id"`

@@ -177,7 +177,7 @@ func TestQueryConvenienceMethods(t *testing.T) {
 			{Alias: "u", Labels: []string{"User"}},
 		},
 		Return: []graph.Return{
-			{Alias: "u"},
+			{Expression: "u"},
 		},
 	}
 	nodes, err := client.FindNodes(ctx, findNodesQuery)
@@ -217,7 +217,7 @@ func TestQueryConvenienceMethods(t *testing.T) {
 			},
 		},
 		Return: []graph.Return{
-			{Alias: "p"},
+			{Expression: "p"},
 		},
 	}
 	edges, err := client.FindEdges(ctx, findEdgesQuery)

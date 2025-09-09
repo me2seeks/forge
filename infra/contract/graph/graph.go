@@ -6,6 +6,8 @@ import (
 
 // Client defines the interface for a graph database.
 type Client interface {
+	GraphAlgorithms
+
 	// --- Node Operations ---
 	CreateNode(ctx context.Context, node *Node) (*Node, error)
 	GetNode(ctx context.Context, nodeID string) (*Node, error)
@@ -49,6 +51,26 @@ type Client interface {
 	DeleteNodesByQuery(ctx context.Context, query *Query) (int, error)
 	// DeleteEdgesByQuery deletes all edges matching the query.
 	DeleteEdgesByQuery(ctx context.Context, query *Query) (int, error)
+}
+
+// GraphAlgorithms defines a set of common graph algorithms.
+type GraphAlgorithms interface {
+	// ShortestPath calculates the shortest path between two nodes.
+	// config can be used to pass algorithm-specific parameters, e.g., {"relationshipWeightProperty": "cost"}.
+	ShortestPath(ctx context.Context, sourceNodeID, targetNodeID string, config map[string]any) ([]*Path, error)
+
+	// PageRank calculates the PageRank for nodes in the graph.
+	// config can be used to pass algorithm-specific parameters, e.g., {"dampingFactor": 0.85, "maxIterations": 20}.
+	PageRank(ctx context.Context, config map[string]any) (map[string]float64, error)
+
+	// ConnectedComponents finds sets of connected nodes in the graph.
+	// It returns a map of nodeID to its componentID.
+	// config can be used to pass algorithm-specific parameters, e.g., {"relationshipTypes": ["FRIENDS_WITH"]}.
+	ConnectedComponents(ctx context.Context, config map[string]any) (map[string]string, error)
+
+	// BetweennessCentrality calculates the betweenness centrality for nodes in the graph.
+	// config can be used to pass algorithm-specific parameters, e.g., {"relationshipTypes": ["HAS_CONNECTION"]}.
+	BetweennessCentrality(ctx context.Context, config map[string]any) (map[string]float64, error)
 }
 
 // BulkWriter provides an interface for efficient bulk data ingestion.

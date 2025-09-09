@@ -15,7 +15,7 @@ func TestBuildCypherQuery_Basic(t *testing.T) {
 			{Alias: "n", Labels: []string{"Person"}},
 		},
 		Return: []graph.Return{
-			{Alias: "n"},
+			{Expression: "n"},
 		},
 	}
 
@@ -43,7 +43,7 @@ func TestBuildCypherQuery_WithPropertyMatch(t *testing.T) {
 			},
 		},
 		Return: []graph.Return{
-			{Alias: "n"},
+			{Expression: "n"},
 		},
 	}
 
@@ -82,7 +82,7 @@ func TestBuildCypherQuery_WithWhereClause(t *testing.T) {
 			},
 		},
 		Return: []graph.Return{
-			{Alias: "n"},
+			{Expression: "n"},
 		},
 	}
 
@@ -117,7 +117,7 @@ func TestBuildCypherQuery_WithOrderBySkipLimit(t *testing.T) {
 		Skip:  &skip,
 		Limit: &limit,
 		Return: []graph.Return{
-			{Alias: "n"},
+			{Expression: "n"},
 		},
 	}
 
@@ -137,3 +137,65 @@ func TestBuildCypherQuery_WithOrderBySkipLimit(t *testing.T) {
 // TestBuildCypherQuery_Complex tests a complex query combining many features.
 // This would be the most comprehensive test.
 // func TestBuildCypherQuery_Complex(t *testing.T) { ... }
+
+// TestBuildCypherQuery_VariableLengthPath tests a query with a variable-length path.
+func TestBuildCypherQuery_VariableLengthPath(t *testing.T) {
+	minHops := 2
+	maxHops := 5
+	query := &graph.Query{
+		Match: []graph.Pattern{
+			{
+				Alias:  "a",
+				Labels: []string{"Person"},
+				Edge: &graph.EdgePattern{
+					Labels:    []string{"KNOWS"},
+					Direction: graph.DirectionOutgoing,
+					MinHops:   &minHops,
+					MaxHops:   &maxHops,
+					Node: &graph.Pattern{
+						Alias: "b",
+					},
+				},
+			},
+		},
+		Return: []graph.Return{
+			{Expression: "a"},
+			{Expression: "b"},
+		},
+	}
+
+	expectedCypher := "MATCH (a:`Person`)-[:KNOWS*2..5]->(b) RETURN a, b"
+	cypher, _ := buildCypherQuery(query)
+
+	if cypher != expectedCypher {
+		t.Errorf("Cypher mismatch for variable-length path.\nGot:  %s\nWant: %s", cypher, expectedCypher)
+	}
+}
+
+// TestBuildCypherQuery_ReturnExpression tests a query with a function expression in the RETURN clause.
+func TestBuildCypherQuery_ReturnExpression(t *testing.T) {
+	query := &graph.Query{
+		Match: []graph.Pattern{
+			{
+				Alias: "p",
+				Edge: &graph.EdgePattern{
+					Direction: graph.DirectionBoth, // Explicitly set direction for clarity
+					Node:      &graph.Pattern{},
+				},
+			},
+		},
+		Return: []graph.Return{
+			{Expression: "count(p)", Alias: "path_count"},
+		},
+	}
+
+	expectedCypher := "MATCH (p)-[]-() RETURN count(p) AS path_count"
+	cypher, params := buildCypherQuery(query)
+
+	if cypher != expectedCypher {
+		t.Errorf("Cypher mismatch for return expression.\nGot:  %s\nWant: %s", cypher, expectedCypher)
+	}
+	if len(params) != 0 {
+		t.Errorf("Params should be empty for this query, got: %v", params)
+	}
+}

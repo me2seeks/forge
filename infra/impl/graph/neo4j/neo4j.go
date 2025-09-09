@@ -631,9 +631,10 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 		if p.Alias != "" {
 			sb.WriteString(p.Alias)
 		}
-		if len(p.Labels) > 0 {
+		// Correctly format multiple node labels, e.g., :Person:Manager
+		for _, label := range p.Labels {
 			sb.WriteString(":`")
-			sb.WriteString(strings.Join(p.Labels, "`:`"))
+			sb.WriteString(label)
 			sb.WriteString("`")
 		}
 		if len(p.Properties) > 0 {
@@ -661,15 +662,34 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 			default: // DirectionOutgoing or empty
 				sb.WriteString("-")
 			}
-			// Edge part: [alias:Type1:Type2 {prop1: $param1}]
+			// Edge part: [alias:TYPE1|TYPE2*min..max {prop1: $param1}]
 			sb.WriteString("[")
 			if edgePattern.Alias != "" {
 				sb.WriteString(edgePattern.Alias)
 			}
 			if len(edgePattern.Labels) > 0 {
-				sb.WriteString(":`")
-				sb.WriteString(strings.Join(edgePattern.Labels, "`:`"))
-				sb.WriteString("`")
+				// Correctly format multiple relationship types, e.g., :KNOWS|LOVES
+				sb.WriteString(":")
+				sb.WriteString(strings.Join(edgePattern.Labels, "|"))
+			}
+
+			// Handle variable-length path syntax
+			if edgePattern.MinHops != nil || edgePattern.MaxHops != nil {
+				sb.WriteString("*")
+				// Case 1: Fixed length, e.g., *3
+				if edgePattern.MinHops != nil && edgePattern.MaxHops != nil && *edgePattern.MinHops == *edgePattern.MaxHops {
+					sb.WriteString(fmt.Sprintf("%d", *edgePattern.MinHops))
+				} else {
+					// Case 2: Bounded range, e.g., *2..5
+					if edgePattern.MinHops != nil {
+						sb.WriteString(fmt.Sprintf("%d", *edgePattern.MinHops))
+					}
+					sb.WriteString("..")
+					// Case 3: Unbounded range, e.g., *2.. or *..5
+					if edgePattern.MaxHops != nil {
+						sb.WriteString(fmt.Sprintf("%d", *edgePattern.MaxHops))
+					}
+				}
 			}
 			if len(edgePattern.Properties) > 0 {
 				sb.WriteString(" {")
@@ -701,9 +721,10 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 				if edgePattern.Node.Alias != "" {
 					sb.WriteString(edgePattern.Node.Alias)
 				}
-				if len(edgePattern.Node.Labels) > 0 {
+				// Correctly format multiple node labels for the target node
+				for _, label := range edgePattern.Node.Labels {
 					sb.WriteString(":`")
-					sb.WriteString(strings.Join(edgePattern.Node.Labels, "`:`"))
+					sb.WriteString(label)
 					sb.WriteString("`")
 				}
 				// Note: For full recursive support, we'd also handle edgePattern.Node.Properties here
@@ -828,15 +849,11 @@ func buildCypherQuery(query *graph.Query) (string, map[string]any) {
 
 		var returnClauses []string
 		for _, r := range query.Return {
-			if len(r.Properties) > 0 {
-				// Return specific properties: n.name, n.age
-				for _, prop := range r.Properties {
-					returnClauses = append(returnClauses, r.Alias+"."+prop)
-				}
-			} else {
-				// Return the whole entity: n
-				returnClauses = append(returnClauses, r.Alias)
+			clause := r.Expression
+			if r.Alias != "" {
+				clause += " AS " + r.Alias
 			}
+			returnClauses = append(returnClauses, clause)
 		}
 		if len(returnClauses) == 0 {
 			// If no return clauses are specified, return everything from MATCH
@@ -850,6 +867,8 @@ func buildCypherQuery(query *graph.Query) (string, map[string]any) {
 		if len(query.OrderBy) > 0 {
 			var orderParts []string
 			for _, o := range query.OrderBy {
+				// Note: OrderBy might need adjustment if it's ordering by an aliased expression.
+				// This implementation assumes ordering by a property on a variable.
 				orderStr := o.Alias + "." + o.Property
 				if !o.Asc {
 					orderStr += " DESC"
@@ -1073,6 +1092,28 @@ func (c *neo4jClient) NewBulkWriter() graph.BulkWriter {
 func (b *bulkWriter) AddNode(ctx context.Context, node *graph.Node) error {
 	b.nodes = append(b.nodes, node)
 	return nil
+}
+
+// --- Graph Algorithms ---
+
+func (c *neo4jClient) ShortestPath(ctx context.Context, sourceNodeID, targetNodeID string, config map[string]any) ([]*graph.Path, error) {
+	// TODO: Implement with GDS or APOC
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (c *neo4jClient) PageRank(ctx context.Context, config map[string]any) (map[string]float64, error) {
+	// TODO: Implement with GDS
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (c *neo4jClient) ConnectedComponents(ctx context.Context, config map[string]any) (map[string]string, error) {
+	// TODO: Implement with GDS
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (c *neo4jClient) BetweennessCentrality(ctx context.Context, config map[string]any) (map[string]float64, error) {
+	// TODO: Implement with GDS
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (b *bulkWriter) AddEdge(ctx context.Context, edge *graph.Edge) error {
