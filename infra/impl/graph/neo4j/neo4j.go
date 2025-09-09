@@ -1077,9 +1077,76 @@ func toGraphEntity(entity any) graph.ResultEntity {
 		return toGraphNode(v)
 	case neo4j.Relationship:
 		return toGraphEdge(v)
+	case []any:
+		return handleInterfaceSlice(v)
 	default:
 		return v
 	}
+}
+
+func handleInterfaceSlice(slice []any) graph.ResultEntity {
+	if isAllRelationships(slice) {
+		return convertToEdges(slice)
+	}
+
+	if isAllNodes(slice) {
+		return convertToNodes(slice)
+	}
+
+	return handleMixedTypes(slice)
+}
+
+func isAllRelationships(slice []any) bool {
+	for _, item := range slice {
+		if _, ok := item.(neo4j.Relationship); !ok {
+			return false
+		}
+	}
+	return len(slice) > 0
+}
+
+func convertToEdges(slice []any) []*graph.Edge {
+	edges := make([]*graph.Edge, len(slice))
+	for i, item := range slice {
+		if rel, ok := item.(neo4j.Relationship); ok {
+			edges[i] = toGraphEdge(rel)
+		}
+	}
+	return edges
+}
+
+func isAllNodes(slice []any) bool {
+	for _, item := range slice {
+		if _, ok := item.(neo4j.Node); !ok {
+			return false
+		}
+	}
+	return len(slice) > 0
+}
+
+func convertToNodes(slice []any) []*graph.Node {
+	nodes := make([]*graph.Node, len(slice))
+	for i, item := range slice {
+		if node, ok := item.(neo4j.Node); ok {
+			nodes[i] = toGraphNode(node)
+		}
+	}
+	return nodes
+}
+
+func handleMixedTypes(slice []any) graph.ResultEntity {
+	var result []any
+	for _, item := range slice {
+		switch v := item.(type) {
+		case neo4j.Node:
+			result = append(result, toGraphNode(v))
+		case neo4j.Relationship:
+			result = append(result, toGraphEdge(v))
+		default:
+			result = append(result, v)
+		}
+	}
+	return result
 }
 
 type bulkWriter struct {
