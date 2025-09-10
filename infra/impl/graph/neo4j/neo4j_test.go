@@ -231,3 +231,180 @@ func TestQueryConvenienceMethods(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(2), count)
 }
+
+// TestCreateEdgeWithSelectors tests the CreateEdge function with node selectors.
+func TestCreateEdgeWithSelectors(t *testing.T) {
+	client, teardown := setup(t)
+	defer teardown()
+	// Create source node
+	sourceNode := &graph.Node{
+		Labels: []string{"Person"},
+		Properties: graph.Properties{
+			"name": "Alice",
+			"id":   "alice-001",
+		},
+	}
+	createdSourceNode, err := client.CreateNode(context.Background(), sourceNode)
+	if err != nil {
+		t.Fatalf("Failed to create source node: %v", err)
+	}
+
+	// Create target node
+	targetNode := &graph.Node{
+		Labels: []string{"Person"},
+		Properties: graph.Properties{
+			"name": "Bob",
+			"id":   "bob-001",
+		},
+	}
+	createdTargetNode, err := client.CreateNode(context.Background(), targetNode)
+	if err != nil {
+		t.Fatalf("Failed to create target node: %v", err)
+	}
+
+	// Create edge using selectors
+	edge := &graph.Edge{
+		Label: "KNOWS",
+		SourceNodeSelector: &graph.NodeSelector{
+			Labels: []string{"Person"},
+			Properties: graph.Properties{
+				"id": "alice-001",
+			},
+		},
+		TargetNodeSelector: &graph.NodeSelector{
+			Labels: []string{"Person"},
+			Properties: graph.Properties{
+				"id": "bob-001",
+			},
+		},
+		Properties: graph.Properties{
+			"since": "2023",
+		},
+	}
+
+	createdEdge, err := client.CreateEdge(context.Background(), edge)
+	if err != nil {
+		t.Fatalf("Failed to create edge: %v", err)
+	}
+
+	if createdEdge.Label != "KNOWS" {
+		t.Errorf("Expected edge label to be 'KNOWS', got '%s'", createdEdge.Label)
+	}
+
+	// Clean up
+	_ = client.DeleteEdge(context.Background(), createdEdge.ID)
+	_ = client.DeleteNode(context.Background(), createdTargetNode.ID)
+	_ = client.DeleteNode(context.Background(), createdSourceNode.ID)
+}
+
+// TestUpdateNodesByQueryWithProperties demonstrates how to update nodes based on their properties.
+func TestUpdateNodesByQueryWithProperties(t *testing.T) {
+	client, teardown := setup(t)
+	defer teardown()
+	// Generate a unique username for this test
+	uniqueUsername := "john_doe_update_test"
+
+	// Create a node
+	node := &graph.Node{
+		Labels: []string{"User"},
+		Properties: graph.Properties{
+			"username": uniqueUsername,
+			"status":   "active",
+		},
+	}
+	createdNode, err := client.CreateNode(context.Background(), node)
+	if err != nil {
+		t.Fatalf("Failed to create node: %v", err)
+	}
+
+	// Prepare a query to find the node by its property
+	query := &graph.Query{
+		Match: []graph.Pattern{
+			{
+				Labels: []string{"User"},
+				Properties: graph.Properties{
+					"username": uniqueUsername,
+				},
+			},
+		},
+	}
+
+	// Update the node's status
+	propertiesToUpdate := graph.Properties{
+		"status": "inactive",
+	}
+
+	updatedCount, err := client.UpdateNodesByQuery(context.Background(), query, propertiesToUpdate)
+	if err != nil {
+		t.Fatalf("Failed to update nodes: %v", err)
+	}
+
+	if updatedCount != 1 {
+		t.Errorf("Expected to update 1 node, but updated %d", updatedCount)
+	}
+
+	// Verify the update
+	updatedNode, err := client.GetNode(context.Background(), createdNode.ID)
+	if err != nil {
+		t.Fatalf("Failed to get updated node: %v", err)
+	}
+
+	if updatedNode.Properties["status"] != "inactive" {
+		t.Errorf("Expected status to be 'inactive', got '%s'", updatedNode.Properties["status"])
+	}
+
+	// Clean up
+	_ = client.DeleteNode(context.Background(), createdNode.ID)
+}
+
+// TestDeleteNodesByQueryWithProperties demonstrates how to delete nodes based on their properties.
+func TestDeleteNodesByQueryWithProperties(t *testing.T) {
+	client, teardown := setup(t)
+	defer teardown()
+	// Generate a unique username for this test
+	uniqueUsername := "jane_doe_delete_test"
+
+	// Create a node
+	node := &graph.Node{
+		Labels: []string{"User"},
+		Properties: graph.Properties{
+			"username": uniqueUsername,
+			"status":   "pending_deletion",
+		},
+	}
+	createdNode, err := client.CreateNode(context.Background(), node)
+	if err != nil {
+		t.Fatalf("Failed to create node: %v", err)
+	}
+
+	// Prepare a query to find the node by its property
+	query := &graph.Query{
+		Match: []graph.Pattern{
+			{
+				Labels: []string{"User"},
+				Properties: graph.Properties{
+					"username": uniqueUsername,
+				},
+			},
+		},
+	}
+
+	// Delete the node
+	deletedCount, err := client.DeleteNodesByQuery(context.Background(), query)
+	if err != nil {
+		t.Fatalf("Failed to delete nodes: %v", err)
+	}
+
+	if deletedCount != 1 {
+		t.Errorf("Expected to delete 1 node, but deleted %d", deletedCount)
+	}
+
+	// Verify the deletion
+	deletedNode, err := client.GetNode(context.Background(), createdNode.ID)
+	if err != nil {
+		t.Fatalf("Failed to check if node was deleted: %v", err)
+	}
+	if deletedNode != nil {
+		t.Error("Expected node to be deleted, but it still exists")
+	}
+}

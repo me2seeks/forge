@@ -208,12 +208,36 @@ func (c *neo4jClient) CreateEdge(ctx context.Context, edge *graph.Edge) (*graph.
 	defer session.Close(ctx)
 
 	result, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		cypher := "MATCH (a), (b) WHERE elementId(a) = $sourceId AND elementId(b) = $targetId CREATE (a)-[r:`" + edge.Label + "` $props]->(b) RETURN r"
-		params := map[string]any{
-			"sourceId": edge.SourceNodeID,
-			"targetId": edge.TargetNodeID,
-			"props":    edge.Properties,
+		var cypher string
+		params := make(map[string]any)
+
+		// Check if selectors are provided
+		if edge.SourceNodeSelector != nil && edge.TargetNodeSelector != nil {
+			// Build MATCH clauses for source and target nodes based on selectors
+			sourceMatch, sourceParams := buildNodeMatchClause("a", edge.SourceNodeSelector)
+			targetMatch, targetParams := buildNodeMatchClause("b", edge.TargetNodeSelector)
+
+			// Merge parameters
+			for k, v := range sourceParams {
+				params[k] = v
+			}
+			for k, v := range targetParams {
+				params[k] = v
+			}
+			params["props"] = edge.Properties
+
+			// Construct the full Cypher query
+			cypher = fmt.Sprintf("%s %s CREATE (a)-[r:`%s` $props]->(b) RETURN r", sourceMatch, targetMatch, edge.Label)
+		} else {
+			// Fallback to the original implementation using element IDs
+			cypher = "MATCH (a), (b) WHERE elementId(a) = $sourceId AND elementId(b) = $targetId CREATE (a)-[r:`" + edge.Label + "` $props]->(b) RETURN r"
+			params = map[string]any{
+				"sourceId": edge.SourceNodeID,
+				"targetId": edge.TargetNodeID,
+				"props":    edge.Properties,
+			}
 		}
+
 		res, err := tx.Run(ctx, cypher, params)
 		if err != nil {
 			return nil, err
@@ -373,11 +397,26 @@ func (c *neo4jClient) UpdateNodesByQuery(ctx context.Context, query *graph.Query
 	// Collect aliases from MATCH for the operation clause generator and RETURN clause
 	var aliasesInMatch []string
 	for _, p := range query.Match {
-		aliasesInMatch = append(aliasesInMatch, p.Alias)
-		if p.Edge != nil && p.Edge.Alias != "" {
-			aliasesInMatch = append(aliasesInMatch, p.Edge.Alias)
-			if p.Edge.Node != nil && p.Edge.Node.Alias != "" {
-				aliasesInMatch = append(aliasesInMatch, p.Edge.Node.Alias)
+		// If alias is empty, use a default one
+		alias := p.Alias
+		if alias == "" {
+			alias = "n" // Default alias for nodes
+		}
+		aliasesInMatch = append(aliasesInMatch, alias)
+		if p.Edge != nil {
+			// If edge alias is empty, use a default one
+			edgeAlias := p.Edge.Alias
+			if edgeAlias == "" {
+				edgeAlias = "r" // Default alias for relationships
+			}
+			aliasesInMatch = append(aliasesInMatch, edgeAlias)
+			if p.Edge.Node != nil {
+				// If edge node alias is empty, use a default one
+				edgeNodeAlias := p.Edge.Node.Alias
+				if edgeNodeAlias == "" {
+					edgeNodeAlias = "m" // Default alias for nodes connected by relationship
+				}
+				aliasesInMatch = append(aliasesInMatch, edgeNodeAlias)
 			}
 		}
 	}
@@ -483,11 +522,26 @@ func (c *neo4jClient) DeleteNodesByQuery(ctx context.Context, query *graph.Query
 	// Collect aliases from MATCH
 	var aliasesInMatch []string
 	for _, p := range query.Match {
-		aliasesInMatch = append(aliasesInMatch, p.Alias)
-		if p.Edge != nil && p.Edge.Alias != "" {
-			aliasesInMatch = append(aliasesInMatch, p.Edge.Alias)
-			if p.Edge.Node != nil && p.Edge.Node.Alias != "" {
-				aliasesInMatch = append(aliasesInMatch, p.Edge.Node.Alias)
+		// If alias is empty, use a default one
+		alias := p.Alias
+		if alias == "" {
+			alias = "n" // Default alias for nodes
+		}
+		aliasesInMatch = append(aliasesInMatch, alias)
+		if p.Edge != nil {
+			// If edge alias is empty, use a default one
+			edgeAlias := p.Edge.Alias
+			if edgeAlias == "" {
+				edgeAlias = "r" // Default alias for relationships
+			}
+			aliasesInMatch = append(aliasesInMatch, edgeAlias)
+			if p.Edge.Node != nil {
+				// If edge node alias is empty, use a default one
+				edgeNodeAlias := p.Edge.Node.Alias
+				if edgeNodeAlias == "" {
+					edgeNodeAlias = "m" // Default alias for nodes connected by relationship
+				}
+				aliasesInMatch = append(aliasesInMatch, edgeNodeAlias)
 			}
 		}
 	}
@@ -633,9 +687,12 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 		}
 		// Build node pattern: (alias:Label1:Label2 {prop1: $param1, prop2: $param2})
 		sb.WriteString("(")
-		if p.Alias != "" {
-			sb.WriteString(p.Alias)
+		// If alias is empty, use a default one
+		alias := p.Alias
+		if alias == "" {
+			alias = "n" // Default alias for nodes
 		}
+		sb.WriteString(alias)
 		// Correctly format multiple node labels, e.g., :Person:Manager
 		for _, label := range p.Labels {
 			sb.WriteString(":`")
@@ -646,7 +703,7 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 			sb.WriteString(" {")
 			propStrings := make([]string, 0, len(p.Properties))
 			for key, value := range p.Properties {
-				paramName := p.Alias + "_" + key
+				paramName := alias + "_" + key
 				params[paramName] = value
 				propStrings = append(propStrings, key+": $"+paramName)
 			}
@@ -669,9 +726,12 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 			}
 			// Edge part: [alias:TYPE1|TYPE2*min..max {prop1: $param1}]
 			sb.WriteString("[")
-			if edgePattern.Alias != "" {
-				sb.WriteString(edgePattern.Alias)
+			// If edge alias is empty, use a default one
+			edgeAlias := edgePattern.Alias
+			if edgeAlias == "" {
+				edgeAlias = "r" // Default alias for relationships
 			}
+			sb.WriteString(edgeAlias)
 			if len(edgePattern.Labels) > 0 {
 				// Correctly format multiple relationship types, e.g., :KNOWS|LOVES
 				sb.WriteString(":")
@@ -700,7 +760,7 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 				sb.WriteString(" {")
 				propStrings := make([]string, 0, len(edgePattern.Properties))
 				for key, value := range edgePattern.Properties {
-					paramName := edgePattern.Alias + "_" + key
+					paramName := edgeAlias + "_" + key
 					params[paramName] = value
 					propStrings = append(propStrings, key+": $"+paramName)
 				}
@@ -723,9 +783,12 @@ func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) stri
 				// For simplicity in this step, we'll just append the node's basic pattern.
 				// A full implementation might recursively call a node pattern builder.
 				sb.WriteString("(")
-				if edgePattern.Node.Alias != "" {
-					sb.WriteString(edgePattern.Node.Alias)
+				// If edge node alias is empty, use a default one
+				edgeNodeAlias := edgePattern.Node.Alias
+				if edgeNodeAlias == "" {
+					edgeNodeAlias = "m" // Default alias for nodes connected by relationship
 				}
+				sb.WriteString(edgeNodeAlias)
 				// Correctly format multiple node labels for the target node
 				for _, label := range edgePattern.Node.Labels {
 					sb.WriteString(":`")
@@ -930,11 +993,26 @@ func buildCypherQueryForOperation(query *graph.Query, opClauseGenerator func(ali
 	// Collect aliases from MATCH for the operation clause generator
 	var aliasesInMatch []string
 	for _, p := range query.Match {
-		aliasesInMatch = append(aliasesInMatch, p.Alias)
-		if p.Edge != nil && p.Edge.Alias != "" {
-			aliasesInMatch = append(aliasesInMatch, p.Edge.Alias)
-			if p.Edge.Node != nil && p.Edge.Node.Alias != "" {
-				aliasesInMatch = append(aliasesInMatch, p.Edge.Node.Alias)
+		// If alias is empty, use a default one
+		alias := p.Alias
+		if alias == "" {
+			alias = "n" // Default alias for nodes
+		}
+		aliasesInMatch = append(aliasesInMatch, alias)
+		if p.Edge != nil {
+			// If edge alias is empty, use a default one
+			edgeAlias := p.Edge.Alias
+			if edgeAlias == "" {
+				edgeAlias = "r" // Default alias for relationships
+			}
+			aliasesInMatch = append(aliasesInMatch, edgeAlias)
+			if p.Edge.Node != nil {
+				// If edge node alias is empty, use a default one
+				edgeNodeAlias := p.Edge.Node.Alias
+				if edgeNodeAlias == "" {
+					edgeNodeAlias = "m" // Default alias for nodes connected by relationship
+				}
+				aliasesInMatch = append(aliasesInMatch, edgeNodeAlias)
 			}
 		}
 	}
@@ -971,6 +1049,44 @@ func buildSetClause(alias string, properties graph.Properties) (string, map[stri
 		setParts = append(setParts, fmt.Sprintf("%s.%s = $%s", alias, key, paramName))
 	}
 	return "SET " + strings.Join(setParts, ", "), params
+}
+
+// buildNodeMatchClause generates a Cypher MATCH clause for a node based on its selector.
+// It returns the MATCH clause string and the parameters map.
+func buildNodeMatchClause(alias string, selector *graph.NodeSelector) (string, map[string]any) {
+	if selector == nil {
+		return "", make(map[string]any)
+	}
+
+	var sb strings.Builder
+	sb.WriteString("(")
+	sb.WriteString(alias)
+
+	// Add labels
+	for _, label := range selector.Labels {
+		sb.WriteString(":`")
+		sb.WriteString(label)
+		sb.WriteString("`")
+	}
+
+	// Add properties
+	if len(selector.Properties) > 0 {
+		sb.WriteString(" {")
+		propStrings := make([]string, 0, len(selector.Properties))
+		params := make(map[string]any)
+		for key, value := range selector.Properties {
+			paramName := alias + "_" + key
+			params[paramName] = value
+			propStrings = append(propStrings, key+": $"+paramName)
+		}
+		sb.WriteString(strings.Join(propStrings, ", "))
+		sb.WriteString("}")
+		sb.WriteString(")")
+		return "MATCH " + sb.String(), params
+	}
+
+	sb.WriteString(")")
+	return "MATCH " + sb.String(), make(map[string]any)
 }
 
 func (c *neo4jClient) FindNodes(ctx context.Context, query *graph.Query) ([]*graph.Node, error) {
