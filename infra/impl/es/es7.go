@@ -37,10 +37,13 @@ func (c *es7Client) Create(ctx context.Context, index, id string, document any) 
 	}
 
 	req := esapi.IndexRequest{
-		Index:      index,
-		DocumentID: id,
-		Body:       bytes.NewReader(body),
-		Refresh:    "true",
+		Index:   index,
+		Body:    bytes.NewReader(body),
+		Refresh: "true",
+	}
+
+	if id != "" {
+		req.DocumentID = id
 	}
 
 	logs.CtxDebugf(ctx, "[Create] req : %s", conv.DebugJsonToStr(req))

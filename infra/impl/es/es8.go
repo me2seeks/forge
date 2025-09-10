@@ -46,7 +46,16 @@ func NewES8(cfg elasticsearch.Config) (Client, error) {
 }
 
 func (c *es8Client) Create(ctx context.Context, index, id string, document any) error {
-	_, err := c.esClient.Index(index).Id(id).Document(document).Do(ctx)
+	// Create an index request
+	req := c.esClient.Index(index).Document(document)
+
+	// If id is not empty, use PUT method with the specified id
+	// If id is empty, use POST method to let ES generate an id
+	if id != "" {
+		req = req.Id(id)
+	}
+
+	_, err := req.Do(ctx)
 	return err
 }
 
