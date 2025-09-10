@@ -78,6 +78,104 @@ func (c *es7Client) Delete(ctx context.Context, index, id string) error {
 	return err
 }
 
+// UpdateByQuery updates documents that match a query.
+func (c *es7Client) UpdateByQuery(ctx context.Context, index string, query *es.Query, script *es.Script) error {
+	// Convert the query to Elasticsearch query format
+	queryBody := map[string]any{}
+	if q := c.query2ESQuery(query); q != nil {
+		queryBody["query"] = q
+	}
+
+	// Add the script to the request body
+	if script != nil {
+		scriptBody := map[string]any{
+			"source": script.Source,
+		}
+		if script.Lang != "" {
+			scriptBody["lang"] = script.Lang
+		}
+		if len(script.Params) > 0 {
+			scriptBody["params"] = script.Params
+		}
+		queryBody["script"] = scriptBody
+	}
+
+	// Marshal the request body to JSON
+	body, err := json.Marshal(queryBody)
+	if err != nil {
+		return err
+	}
+
+	// Create the UpdateByQuery request
+	req := esapi.UpdateByQueryRequest{
+		Index: []string{index},
+		Body:  bytes.NewReader(body),
+		// By default, refresh is false. You might want to make this configurable.
+		// Refresh: "true",
+	}
+
+	logs.CtxDebugf(ctx, "[UpdateByQuery] req : %s", string(body))
+
+	// Execute the request
+	res, err := req.Do(ctx, c.esClient)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	// Check for HTTP errors
+	if res.IsError() {
+		return fmt.Errorf("update by query request failed with status %s", res.Status())
+	}
+
+	// Optionally, you could parse the response here to get information like
+	// number of updated documents, version conflicts, etc.
+	// For now, we just return nil on success.
+	return nil
+}
+
+// DeleteByQuery deletes documents that match a query.
+func (c *es7Client) DeleteByQuery(ctx context.Context, index string, query *es.Query) error {
+	// Convert the query to Elasticsearch query format
+	queryBody := map[string]any{}
+	if q := c.query2ESQuery(query); q != nil {
+		queryBody["query"] = q
+	}
+
+	// Marshal the request body to JSON
+	body, err := json.Marshal(queryBody)
+	if err != nil {
+		return err
+	}
+
+	// Create the DeleteByQuery request
+	req := esapi.DeleteByQueryRequest{
+		Index: []string{index},
+		Body:  bytes.NewReader(body),
+		// By default, refresh is false. You might want to make this configurable.
+		// Refresh: "true",
+	}
+
+	logs.CtxDebugf(ctx, "[DeleteByQuery] req : %s", string(body))
+
+	// Execute the request
+	res, err := req.Do(ctx, c.esClient)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	// Check for HTTP errors
+	if res.IsError() {
+		return fmt.Errorf("delete by query request failed with status %s", res.Status())
+	}
+
+	// Optionally, you could parse the response here to get information like
+	// number of deleted documents, version conflicts, etc.
+	// For now, we just return nil on success.
+	return nil
+}
+
 func (c *es7Client) Exists(ctx context.Context, index string) (bool, error) {
 	req := esapi.IndicesExistsRequest{Index: []string{index}}
 	logs.CtxDebugf(ctx, "[Exists] req : %s", conv.DebugJsonToStr(req))

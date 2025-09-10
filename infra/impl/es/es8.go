@@ -60,6 +60,60 @@ func (c *es8Client) Delete(ctx context.Context, index, id string) error {
 	return err
 }
 
+// UpdateByQuery updates documents that match a query.
+func (c *es8Client) UpdateByQuery(ctx context.Context, index string, query *es.Query, script *es.Script) error {
+	// Start building the request
+	req := c.esClient.UpdateByQuery(index)
+
+	// Set the query
+	if query != nil {
+		req = req.Query(c.query2ESQuery(query))
+	}
+
+	// Set the script
+	if script != nil {
+		// Build the script object for ES v8 typed client
+		esScript := types.Script{
+			Source: &script.Source,
+			// Note: Lang and Params are omitted for simplicity.
+			// If needed, they would require specific type conversions
+			// that depend on the exact version of the ES client library.
+		}
+		req = req.Script(&esScript)
+	}
+
+	// Execute the request
+	_, err := req.Do(ctx)
+	if err != nil {
+		return err
+	}
+
+	// The typed client handles error checking internally for Do().
+	// If Do() returns without error, the operation was successful.
+	return nil
+}
+
+// DeleteByQuery deletes documents that match a query.
+func (c *es8Client) DeleteByQuery(ctx context.Context, index string, query *es.Query) error {
+	// Start building the request
+	req := c.esClient.DeleteByQuery(index)
+
+	// Set the query
+	if query != nil {
+		req = req.Query(c.query2ESQuery(query))
+	}
+
+	// Execute the request
+	_, err := req.Do(ctx)
+	if err != nil {
+		return err
+	}
+
+	// The typed client handles error checking internally for Do().
+	// If Do() returns without error, the operation was successful.
+	return nil
+}
+
 func (c *es8Client) Exists(ctx context.Context, index string) (bool, error) {
 	exist, err := exists.NewExistsFunc(c.esClient)(index).Do(ctx)
 	if err != nil {

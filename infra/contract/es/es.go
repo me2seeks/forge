@@ -8,6 +8,8 @@ type Client interface {
 	Create(ctx context.Context, index, id string, document any) error
 	Update(ctx context.Context, index, id string, document any) error
 	Delete(ctx context.Context, index, id string) error
+	UpdateByQuery(ctx context.Context, index string, query *Query, script *Script) error
+	DeleteByQuery(ctx context.Context, index string, query *Query) error
 	Search(ctx context.Context, index string, req *Request) (*Response, error)
 	Exists(ctx context.Context, index string) (bool, error)
 	Count(ctx context.Context, index string, query *Query) (int64, error)

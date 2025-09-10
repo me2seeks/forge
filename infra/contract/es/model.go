@@ -18,6 +18,18 @@ type BulkIndexerItem struct {
 	RetryOnConflict *int
 }
 
+// Script represents an Elasticsearch script, used for UpdateByQuery operations.
+// It defines the logic for how documents should be updated.
+type Script struct {
+	// Lang is the scripting language. Common values are "painless", "expression", "mustache".
+	// If empty, "painless" is typically used by default.
+	Lang string `json:"lang,omitempty"`
+	// Source is the script source code.
+	Source string `json:"source"`
+	// Params is a map of parameters that can be used within the script.
+	Params map[string]any `json:"params,omitempty"`
+}
+
 type Request struct {
 	Size        *int
 	Query       *Query
