@@ -30,16 +30,19 @@ func NewES7(cfg elasticsearch.Config) (Client, error) {
 	return &es7Client{esClient: esClient}, nil
 }
 
-func (c *es7Client) Create(ctx context.Context, index, id string, document any) error {
+func (c *es7Client) Create(ctx context.Context, index, id string, document any, refresh bool) error {
 	body, err := json.Marshal(document)
 	if err != nil {
 		return err
 	}
 
 	req := esapi.IndexRequest{
-		Index:   index,
-		Body:    bytes.NewReader(body),
-		Refresh: "true",
+		Index: index,
+		Body:  bytes.NewReader(body),
+	}
+
+	if refresh {
+		req.Refresh = "true"
 	}
 
 	if id != "" {
@@ -51,7 +54,7 @@ func (c *es7Client) Create(ctx context.Context, index, id string, document any) 
 	return err
 }
 
-func (c *es7Client) Update(ctx context.Context, index, id string, document any) error {
+func (c *es7Client) Update(ctx context.Context, index, id string, document any, refresh bool) error {
 	bodyMap := map[string]any{"doc": document}
 	body, err := json.Marshal(bodyMap)
 	if err != nil {
@@ -62,6 +65,9 @@ func (c *es7Client) Update(ctx context.Context, index, id string, document any) 
 		DocumentID: id,
 		Body:       bytes.NewReader(body),
 	}
+	if refresh {
+		req.Refresh = "true"
+	}
 
 	logs.CtxDebugf(ctx, "[Update] req : %s", conv.DebugJsonToStr(req))
 
@@ -69,10 +75,13 @@ func (c *es7Client) Update(ctx context.Context, index, id string, document any) 
 	return err
 }
 
-func (c *es7Client) Delete(ctx context.Context, index, id string) error {
+func (c *es7Client) Delete(ctx context.Context, index, id string, refresh bool) error {
 	req := esapi.DeleteRequest{
 		Index:      index,
 		DocumentID: id,
+	}
+	if refresh {
+		req.Refresh = "true"
 	}
 
 	logs.CtxDebugf(ctx, "[Delete] req : %s", conv.DebugJsonToStr(req))
@@ -82,7 +91,7 @@ func (c *es7Client) Delete(ctx context.Context, index, id string) error {
 }
 
 // UpdateByQuery updates documents that match a query.
-func (c *es7Client) UpdateByQuery(ctx context.Context, index string, query *es.Query, script *es.Script) error {
+func (c *es7Client) UpdateByQuery(ctx context.Context, index string, query *es.Query, script *es.Script, refresh bool) error {
 	// Convert the query to Elasticsearch query format
 	queryBody := map[string]any{}
 	if q := c.query2ESQuery(query); q != nil {
@@ -117,6 +126,10 @@ func (c *es7Client) UpdateByQuery(ctx context.Context, index string, query *es.Q
 		// Refresh: "true",
 	}
 
+	if refresh {
+		req.Refresh = ptr.Of(true)
+	}
+
 	logs.CtxDebugf(ctx, "[UpdateByQuery] req : %s", string(body))
 
 	// Execute the request
@@ -138,7 +151,7 @@ func (c *es7Client) UpdateByQuery(ctx context.Context, index string, query *es.Q
 }
 
 // DeleteByQuery deletes documents that match a query.
-func (c *es7Client) DeleteByQuery(ctx context.Context, index string, query *es.Query) error {
+func (c *es7Client) DeleteByQuery(ctx context.Context, index string, query *es.Query, refresh bool) error {
 	// Convert the query to Elasticsearch query format
 	queryBody := map[string]any{}
 	if q := c.query2ESQuery(query); q != nil {
@@ -157,6 +170,10 @@ func (c *es7Client) DeleteByQuery(ctx context.Context, index string, query *es.Q
 		Body:  bytes.NewReader(body),
 		// By default, refresh is false. You might want to make this configurable.
 		// Refresh: "true",
+	}
+
+	if refresh {
+		req.Refresh = ptr.Of(true)
 	}
 
 	logs.CtxDebugf(ctx, "[DeleteByQuery] req : %s", string(body))

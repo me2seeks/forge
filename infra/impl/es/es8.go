@@ -12,6 +12,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/exists"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/operator"
+	esrefresh "github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/refresh"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/textquerytype"
 
@@ -45,7 +46,7 @@ func NewES8(cfg elasticsearch.Config) (Client, error) {
 	}, nil
 }
 
-func (c *es8Client) Create(ctx context.Context, index, id string, document any) error {
+func (c *es8Client) Create(ctx context.Context, index, id string, document any, refresh bool) error {
 	// Create an index request
 	req := c.esClient.Index(index).Document(document)
 
@@ -55,24 +56,39 @@ func (c *es8Client) Create(ctx context.Context, index, id string, document any) 
 		req = req.Id(id)
 	}
 
+	if refresh {
+		req.Refresh(esrefresh.True)
+	}
+
 	_, err := req.Do(ctx)
 	return err
 }
 
-func (c *es8Client) Update(ctx context.Context, index, id string, document any) error {
-	_, err := c.esClient.Update(index, id).Doc(document).Do(ctx)
+func (c *es8Client) Update(ctx context.Context, index, id string, document any, refresh bool) error {
+	req := c.esClient.Update(index, id).Doc(document)
+	if refresh {
+		req.Refresh(esrefresh.True)
+	}
+	_, err := req.Do(ctx)
 	return err
 }
 
-func (c *es8Client) Delete(ctx context.Context, index, id string) error {
-	_, err := c.esClient.Delete(index, id).Do(ctx)
+func (c *es8Client) Delete(ctx context.Context, index, id string, refresh bool) error {
+	req := c.esClient.Delete(index, id)
+	if refresh {
+		req.Refresh(esrefresh.True)
+	}
+	_, err := req.Do(ctx)
 	return err
 }
 
 // UpdateByQuery updates documents that match a query.
-func (c *es8Client) UpdateByQuery(ctx context.Context, index string, query *es.Query, script *es.Script) error {
+func (c *es8Client) UpdateByQuery(ctx context.Context, index string, query *es.Query, script *es.Script, refresh bool) error {
 	// Start building the request
 	req := c.esClient.UpdateByQuery(index)
+	if refresh {
+		req.Refresh(true)
+	}
 
 	// Set the query
 	if query != nil {
@@ -103,9 +119,12 @@ func (c *es8Client) UpdateByQuery(ctx context.Context, index string, query *es.Q
 }
 
 // DeleteByQuery deletes documents that match a query.
-func (c *es8Client) DeleteByQuery(ctx context.Context, index string, query *es.Query) error {
+func (c *es8Client) DeleteByQuery(ctx context.Context, index string, query *es.Query, refresh bool) error {
 	// Start building the request
 	req := c.esClient.DeleteByQuery(index)
+	if refresh {
+		req.Refresh(true)
+	}
 
 	// Set the query
 	if query != nil {
