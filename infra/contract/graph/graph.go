@@ -25,6 +25,7 @@ type Client interface {
 
 	// --- Query Operations ---
 	Query(ctx context.Context, query *Query) (*QueryResult, error)
+	RawQuery(ctx context.Context, query string, params map[string]any) (*QueryResult, error)
 	// FindNodes is a convenience method to find and return nodes directly.
 	// It is a wrapper around the generic Query method.
 	FindNodes(ctx context.Context, query *Query) ([]*Node, error)

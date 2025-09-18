@@ -55,10 +55,17 @@ const (
 
 // Where clause for complex filtering, borrowing from the es contract's BoolQuery.
 type Where struct {
-	Filter  []Condition
-	Must    []Condition
-	MustNot []Condition
-	Should  []Condition
+	Filter   []Condition
+	Must     []Condition
+	MustNot  []Condition
+	Should   []Condition
+	MustExpr []ExpressionCondition
+}
+
+// ExpressionCondition 包含一个原生表达式和其对应的参数
+type ExpressionCondition struct {
+	Expression string
+	Params     map[string]any
 }
 
 // Condition is a single filter condition.

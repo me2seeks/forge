@@ -408,3 +408,44 @@ func TestDeleteNodesByQueryWithProperties(t *testing.T) {
 		t.Error("Expected node to be deleted, but it still exists")
 	}
 }
+
+func TestQueryWithMustExpr(t *testing.T) {
+	client, teardown := setup(t)
+	defer teardown()
+
+	ctx := context.Background()
+
+	// 1. Setup test data
+	_, err := client.CreateNode(ctx, &graph.Node{
+		Labels:     []string{"User"},
+		Properties: graph.Properties{"name": "Alice", "age": 30},
+	})
+	require.NoError(t, err)
+
+	_, err = client.CreateNode(ctx, &graph.Node{
+		Labels:     []string{"User"},
+		Properties: graph.Properties{"name": "Bob"}, // Bob has no age
+	})
+	require.NoError(t, err)
+
+	// 2. Test FindNodes with MustExpr
+	query := &graph.Query{
+		Match: []graph.Pattern{
+			{Alias: "u", Labels: []string{"User"}},
+		},
+		Where: &graph.Where{
+			MustExpr: []graph.ExpressionCondition{
+				{
+					Expression: "exists(u.age)",
+				},
+			},
+		},
+		Return: []graph.Return{
+			{Expression: "u"},
+		},
+	}
+	nodes, err := client.FindNodes(ctx, query)
+	require.NoError(t, err)
+	require.Len(t, nodes, 1)
+	require.Equal(t, "Alice", nodes[0].Properties["name"])
+}

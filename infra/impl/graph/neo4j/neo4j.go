@@ -671,6 +671,35 @@ func (c *neo4jClient) Query(ctx context.Context, query *graph.Query) (*graph.Que
 	return result.(*graph.QueryResult), nil
 }
 
+func (c *neo4jClient) RawQuery(ctx context.Context, query string, params map[string]any) (*graph.QueryResult, error) {
+	session := c.driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		res, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+
+		var records []graph.Record
+		for res.Next(ctx) {
+			record := res.Record()
+			rec := make(graph.Record)
+			for _, key := range record.Keys {
+				value, _ := record.Get(key)
+				rec[key] = toGraphEntity(value)
+			}
+			records = append(records, rec)
+		}
+		return &graph.QueryResult{Records: records}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*graph.QueryResult), nil
+}
+
 // buildMatchClause generates the MATCH part of the Cypher query.
 func buildMatchClause(matchPatterns []graph.Pattern, params map[string]any) string {
 	if len(matchPatterns) == 0 {
@@ -897,6 +926,18 @@ func buildWhereClause(where *graph.Where, params map[string]any) string {
 			mustNotParts = append(mustNotParts, buildCondition(cond, params))
 		}
 		clauses = append(clauses, "NOT ("+strings.Join(mustNotParts, " AND ")+")")
+	}
+
+	// Handle MustExpr (raw expression)
+	if len(where.MustExpr) > 0 {
+		for _, exprCond := range where.MustExpr {
+			clauses = append(clauses, "("+exprCond.Expression+")")
+			for key, value := range exprCond.Params {
+				// Be careful about overwriting existing parameters.
+				// A more robust solution might involve namespacing parameters.
+				params[key] = value
+			}
+		}
 	}
 
 	if len(clauses) == 0 {
