@@ -10,9 +10,6 @@ import (
 
 var _ FullLogger = (*slogLogger)(nil)
 
-// slogKey is the key for storing slog attributes in context.
-type slogKey struct{}
-
 // slogLogger is a logger that uses slog.
 type slogLogger struct {
 	l     *slog.Logger
@@ -169,7 +166,7 @@ func (s *slogLogger) CtxFatalf(ctx context.Context, format string, v ...any) {
 
 func (s *slogLogger) logCtx(ctx context.Context, level Level, format string, v ...any) {
 	var attrs []slog.Attr
-	if val := ctx.Value(slogKey{}); val != nil {
+	if val := ctx.Value(logKey{}); val != nil {
 		if kv, ok := val.([]any); ok {
 			attrs = append(attrs, slog.Any("context", kv))
 		}

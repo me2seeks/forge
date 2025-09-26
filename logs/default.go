@@ -10,9 +10,6 @@ import (
 
 var _ FullLogger = (*defaultLogger)(nil)
 
-// logKey is the key for storing slog attributes in context.
-type logKey struct{}
-
 var logger FullLogger = &defaultLogger{
 	level:  LevelInfo,
 	stdlog: log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile|log.Lmicroseconds),

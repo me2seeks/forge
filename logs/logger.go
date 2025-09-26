@@ -80,6 +80,12 @@ var strs = []string{
 	"[Fatal] ",
 }
 
+type logKey struct{}
+
+func SetContext(ctx context.Context, kv ...any) context.Context {
+	return context.WithValue(ctx, logKey{}, kv)
+}
+
 func (lv Level) toString() string {
 	if lv >= LevelTrace && lv <= LevelFatal {
 		return strs[lv]
