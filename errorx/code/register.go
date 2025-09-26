@@ -1,7 +1,7 @@
 package code
 
 import (
-	"github.com/me2seeks/forge/pkg/errorx/internal"
+	"github.com/me2seeks/forge/errorx/internal"
 )
 
 type RegisterOptionFn = internal.RegisterOption

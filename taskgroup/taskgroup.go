@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/me2seeks/forge/pkg/logs"
+	"github.com/me2seeks/forge/logs"
 )
 
 type TaskGroup interface {

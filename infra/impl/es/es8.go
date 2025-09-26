@@ -17,10 +17,10 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/textquerytype"
 
 	"github.com/me2seeks/forge/infra/contract/es"
-	"github.com/me2seeks/forge/pkg/logs"
-	"github.com/me2seeks/forge/pkg/prelude/conv"
-	"github.com/me2seeks/forge/pkg/prelude/ptr"
-	"github.com/me2seeks/forge/pkg/sonic"
+	"github.com/me2seeks/forge/logs"
+	"github.com/me2seeks/forge/prelude/conv"
+	"github.com/me2seeks/forge/prelude/ptr"
+	"github.com/me2seeks/forge/sonic"
 )
 
 type es8Client struct {

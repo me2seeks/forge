@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/me2seeks/forge/pkg/errorx/code"
+	"github.com/me2seeks/forge/errorx/code"
 )
 
 var (

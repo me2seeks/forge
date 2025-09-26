@@ -3,7 +3,7 @@ package safego
 import (
 	"context"
 
-	"github.com/me2seeks/forge/pkg/goutil"
+	"github.com/me2seeks/forge/goutil"
 )
 
 func Go(ctx context.Context, fn func()) {

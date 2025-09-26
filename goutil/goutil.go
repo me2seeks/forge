@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
-	"github.com/me2seeks/forge/pkg/logs"
+	"github.com/me2seeks/forge/logs"
 )
 
 func Recovery(ctx context.Context) {

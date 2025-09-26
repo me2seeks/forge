@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/me2seeks/forge/pkg/prelude/ptr"
+	"github.com/me2seeks/forge/prelude/ptr"
 )
 
 // StrToInt64E returns strconv.ParseInt(v, 10, 64)

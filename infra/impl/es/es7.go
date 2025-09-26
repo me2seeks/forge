@@ -12,9 +12,9 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esutil"
 
 	"github.com/me2seeks/forge/infra/contract/es"
-	"github.com/me2seeks/forge/pkg/logs"
-	"github.com/me2seeks/forge/pkg/prelude/conv"
-	"github.com/me2seeks/forge/pkg/prelude/ptr"
+	"github.com/me2seeks/forge/logs"
+	"github.com/me2seeks/forge/prelude/conv"
+	"github.com/me2seeks/forge/prelude/ptr"
 )
 
 type es7Client struct {

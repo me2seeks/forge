@@ -14,8 +14,8 @@ import (
 
 	"github.com/me2seeks/forge/infra/contract/storage"
 	"github.com/me2seeks/forge/infra/impl/storage/proxy"
-	"github.com/me2seeks/forge/pkg/logs"
-	"github.com/me2seeks/forge/pkg/prelude/conv"
+	"github.com/me2seeks/forge/logs"
+	"github.com/me2seeks/forge/prelude/conv"
 )
 
 type tosClient struct {

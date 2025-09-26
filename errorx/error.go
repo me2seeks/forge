@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/me2seeks/forge/pkg/errorx/internal"
+	"github.com/me2seeks/forge/errorx/internal"
 )
 
 // StatusError is an interface for error with status code, you can

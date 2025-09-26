@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/me2seeks/forge/pkg/ctxcache"
-	"github.com/me2seeks/forge/pkg/logs"
+	"github.com/me2seeks/forge/ctxcache"
+	"github.com/me2seeks/forge/logs"
 	"github.com/me2seeks/forge/types/consts"
 )
 
